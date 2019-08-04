@@ -1,0 +1,9 @@
+{
+  "name": "sample-http",
+  "version": "0.0.1",
+  "dependencies": {
+    "adm-zip": "0.4.13",
+    "request": "2.88.0",
+    "@google-cloud/storage": "3.0.4"
+  }
+}
