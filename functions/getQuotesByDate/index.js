@@ -103,13 +103,3 @@ function getDataInRange(startDate, endDate) {
   }
 }
 
-// var startDate = endDate = new Date();
-// if (process.argv.length == 3) {
-//   startDate = endDate = process.argv[2];
-// } else if (process.argv.length == 4) {
-//   startDate = process.argv[2];
-//   endDate = process.argv[3];
-// } 
-
-// getDataInRange(startDate, endDate);
-
