@@ -1,17 +1,22 @@
 name: Deply GCF
 
-on: [push]
+on: 
+  push:
+    branches:
+      - master
+    paths:
+      - 'functions/getQuotesByDate/*'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: install gcloud 
+    - name: Install gcloud SDK
       run: |
         sudo apt-get update && sudo apt-get install google-cloud-sdk
-    - name: activate service account 
-      env: # Or as an environment variable
+    - name: Activate Service Account 
+      env: 
         GCLOUD_AUTH: ${{ secrets.GCLOUD_AUTH }}
       run: |
         echo "$GCLOUD_AUTH" | base64 --decode > "$HOME"/gcloud.json
