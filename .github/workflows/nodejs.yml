@@ -7,8 +7,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: npm install, build, and test
+    - name: install gcloud 
       run: |
         sudo apt-get update && sudo apt-get install google-cloud-sdk
-      env:
-        CI: true
+    - name: activate service account 
+      env: # Or as an environment variable
+        GCLOUD_AUTH: ${{ secrets.GCLOUD_AUTH }}
+      run: |
+        echo "$GCLOUD_AUTH" | base64 --decode > "$HOME"/gcloud.json
+        sh -c "gcloud auth activate-service-account --key-file=$HOME/gcloud.json $*"
+    - name: deploy function 
+      run: |
+        gcloud functions deploy getQuotesByDate --runtime nodejs8 --service-account github-actions@demoneil.iam.gserviceaccount.com --source functions/getQuotesByDate
+
+
