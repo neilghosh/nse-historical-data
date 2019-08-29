@@ -18,6 +18,6 @@ jobs:
         sh -c "gcloud auth activate-service-account --key-file=$HOME/gcloud.json $*"
     - name: deploy function 
       run: |
-        gcloud functions deploy getQuotesByDate --runtime nodejs8 --service-account github-actions@demoneil.iam.gserviceaccount.com --source functions/getQuotesByDate
+        gcloud functions deploy getQuotesByDate --runtime nodejs8 --project demoneil --service-account github-actions@demoneil.iam.gserviceaccount.com --source functions/getQuotesByDate
 
 
