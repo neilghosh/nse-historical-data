@@ -1,4 +1,4 @@
-name: Deply GCF
+name: Deploy GCF
 
 on: 
   push:
