@@ -40,3 +40,31 @@ Run from command line without helper function
 ```
 node -e 'require("./index").fetchTickers({query:{date:"2019-07-31"}},{status:() => ({})})'
 ```
+
+## Deployed as cloud function 
+
+Dowload Backfill
+```
+d="2020-01-04"
+until [[ $d > 2020-07-23 ]]; do 
+    echo "$d"
+    url='https://us-central1-demoneil.cloudfunctions.net/getQuotesByDate?date='$d
+    echo $url
+    curl -s ${url} --output /dev/null 
+    d=$(date -I -d "$d + 1 day")
+done
+
+```
+
+See dailt data count 
+
+```
+SELECT count(*), TIMESTAMP FROM `demoneil.nse_data.nse_historical_data` group by TIMESTAMP order by TIMESTAMP DESC LIMIT 1000
+```
+
+## Delete duplicate data
+```
+CREATE OR REPLACE TABLE `demoneil.nse_data.nse_historical_data_dedupe`
+AS
+SELECT * FROM `demoneil.nse_data.nse_historical_data`
+```
