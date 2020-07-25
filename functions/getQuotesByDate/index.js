@@ -30,7 +30,7 @@ function __fetchTickers(date) {
     date = new Date();//  new Date('1995-12-17')
   }
   // The URL Should be of format http://www.nseindia.com/content/historical/EQUITIES/2019/JUN/cm07JUN2019bhav.csv.zip'
-  var file_url = 'http://www.nseindia.com/content/historical/EQUITIES/' + date.getFullYear() + '/' + months[date.getMonth()] + '/cm' + getDate(date) + 'bhav.csv.zip';
+  var file_url = 'http://www1.nseindia.com/content/historical/EQUITIES/' + date.getFullYear() + '/' + months[date.getMonth()] + '/cm' + getDate(date) + 'bhav.csv.zip';
   var dataPromise = getData(file_url);
   dataPromise.then(function (quotes) {
     writeToBucket(date, quotes);
