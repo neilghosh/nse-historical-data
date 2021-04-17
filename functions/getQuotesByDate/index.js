@@ -30,7 +30,7 @@ function __fetchTickers(date) {
     date = new Date();//  new Date('1995-12-17')
   }
   // The URL Should be of format http://www.nseindia.com/content/historical/EQUITIES/2019/JUN/cm07JUN2019bhav.csv.zip'
-  var file_url = 'http://www1.nseindia.com/content/historical/EQUITIES/' + date.getFullYear() + '/' + months[date.getMonth()] + '/cm' + getDate(date) + 'bhav.csv.zip';
+  var file_url = 'https://www1.nseindia.com/content/historical/EQUITIES/' + date.getFullYear() + '/' + months[date.getMonth()] + '/cm' + getDate(date) + 'bhav.csv.zip';
   var dataPromise = getData(file_url);
   dataPromise.then(function (quotes) {
     writeToBucket(date, quotes);
@@ -47,7 +47,12 @@ function getData(file_url) {
   // Return new promise 
   return new Promise(function (resolve, reject) {
     // Do async job
-    request.get({ url: file_url, encoding: null }, (err, res1, body) => {
+
+    var headers = { 
+    'Referer': 'https://www1.nseindia.com/products/content/equities/equities/archieve_eq.htm'
+    };
+
+    request.get({ url: file_url, encoding: null,headers: headers }, (err, res1, body) => {
       if (err) {
         reject(err);
       } else if (res1.statusCode >= 400) {
