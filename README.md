@@ -62,6 +62,23 @@ See dailt data count
 SELECT count(*), TIMESTAMP FROM `demoneil.nse_data.nse_historical_data` group by TIMESTAMP order by TIMESTAMP DESC LIMIT 1000
 ```
 
+## Create View of Data for unique date
+```
+     SELECT *
+     FROM (
+           SELECT
+           *,
+               ROW_NUMBER()
+                   OVER (PARTITION BY SYMBOL, TIMESTAMP)
+                   row_number
+           FROM demoneil.nse_data.nse_historical_data
+           WHERE SERIES = 'EQ'
+         )
+     WHERE row_number = 1
+     -- SELECT  FROM `demoneil.nse_data. nse_historical_data_unique` LIMIT 1000
+```
+
+
 ## Delete duplicate data
 ```
 CREATE OR REPLACE TABLE `demoneil.nse_data.nse_historical_data_dedupe`
