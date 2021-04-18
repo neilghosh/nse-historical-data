@@ -85,3 +85,6 @@ CREATE OR REPLACE TABLE `demoneil.nse_data.nse_historical_data_dedupe`
 AS
 SELECT * FROM `demoneil.nse_data.nse_historical_data`
 ```
+
+## saveQuoteToDatastore
+Automatically saves quote to DS
