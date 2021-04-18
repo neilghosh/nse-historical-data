@@ -54,7 +54,7 @@ func parseCsv(csvQuotes string) map[string]*quote {
 	quotes := make(map[string]*quote)
 	quoteLines := strings.Split(csvQuotes, "\n")
 	log.Println("Number of lines parsed ", len(quoteLines))
-	log.Println("Sample line ", len(quoteLines[1]))
+	log.Println("Sample line ", quoteLines[1])
 
 	for i, quoteLine := range quoteLines {
 		//Skip headers
