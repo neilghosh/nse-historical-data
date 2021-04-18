@@ -23,7 +23,7 @@ func TestParseCsv(t *testing.T) {
 	csv := `SYMBOL,SERIES,OPEN,HIGH,LOW,CLOSE,LAST,PREVCLOSE,TOTTRDQTY,TOTTRDVAL,TIMESTAMP,TOTALTRADES,ISIN
 	20MICRONS,EQ,36.5,36.7,35.9,36.05,36,36.05,28824,1043088.25,16-APR-2021,397,INE144J01027,
 	`
-
+	//Note that the extra line at the end of the multi line string is on purpose. This is how the actual event comes
 	actualQuotes := parseCsv(csv)
 
 	assert.Equal(t, 1, len(actualQuotes), "Map size mismatch")
