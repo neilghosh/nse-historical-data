@@ -5,14 +5,36 @@
  * @param {!express:Response} res HTTP response context.
  */
 const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
 const { Storage } = require('@google-cloud/storage');
 const storage = new Storage();
 const bucketName = 'nse-historical-prices';
 var gcsBucket = storage.bucket(bucketName);
 
+const {PubSub} = require('@google-cloud/pubsub');
+const pubSubClient = new PubSub();
+topicName = 'quote-data',
+
 exports.fetchTickers = (req, res) => {
   var date = req.query.hasOwnProperty('date') ? req.query.date : undefined;
   __fetchTickers(date).then(function (quotes) {
+    const dataBuffer = Buffer.from(quotes);
+
+    async function publishMessage(data) {
+      // Publishes the message as a string, e.g. "Hello, world!" or JSON.stringify(someObject)
+      const dataBuffer = Buffer.from(data);
+  
+      try {
+        const messageId = await pubSubClient.topic(topicName).publish(dataBuffer);
+        console.log(`Message ${messageId} published.`);
+      } catch (error) {
+        console.error(`Received error while publishing: ${error.message}`);
+        process.exitCode = 1;
+      }
+    }
+
+    publishMessage(quotes);
+
     res.status(200).send(quotes);
   }, function (err) {
     res.status(400).send(err);
@@ -21,6 +43,11 @@ exports.fetchTickers = (req, res) => {
 var errHandler = function (err) {
   console.log(err);
 }
+
+process.on('unhandledRejection', err => {
+  console.error(err.message);
+  process.exitCode = 1;
+});
 
 function __fetchTickers(date) {
   if (date) {
