@@ -57,8 +57,8 @@ func parseCsv(csvQuotes string) map[string]*quote {
 	log.Println("Sample line ", quoteLines[1])
 
 	for i, quoteLine := range quoteLines {
-		//Skip headers
-		if i == 0 {
+		//Skip headers & the last new line
+		if i == 0 || strings.TrimSpace(quoteLine) == "" {
 			continue
 		} else {
 			key, quote := parseQuote(quoteLine)
@@ -78,6 +78,11 @@ func writeToDateStore(ctx context.Context, quotes map[string]*quote) {
 }
 
 func parseQuote(quoteLine string) (string, *quote) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("panic occurred while parsing:", len(quoteLine), quoteLine, err)
+		}
+	}()
 	quoteValue := strings.Split(quoteLine, ",")
 	symbol := quoteValue[0]
 	//SYMBOL,SERIES,OPEN,HIGH,LOW,CLOSE,LAST,PREVCLOSE,TOTTRDQTY,TOTTRDVAL,TIMESTAMP,TOTALTRADES,ISIN
