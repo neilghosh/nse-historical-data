@@ -88,3 +88,4 @@ SELECT * FROM `demoneil.nse_data.nse_historical_data`
 
 ## saveQuoteToDatastore
 Automatically saves quote to DS
+![image](https://user-images.githubusercontent.com/726337/115161330-ba9acb00-a0ba-11eb-91b9-79c708b699cd.png)
