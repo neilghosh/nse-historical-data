@@ -108,6 +108,5 @@ func parseTimestamp(timestamp string) (string, time.Time) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(t)
 	return t.Format("2006-01-02"), t
 }
