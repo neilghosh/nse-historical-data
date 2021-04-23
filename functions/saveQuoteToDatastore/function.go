@@ -12,6 +12,7 @@ import (
 )
 
 var datastoreClient *datastore.Client
+var ENTITY_NAME = `StockPrices`
 
 // PubSubMessage is the payload of a Pub/Sub event. Please refer to the docs for
 // additional information regarding Pub/Sub events.
@@ -45,8 +46,9 @@ func HelloPubSub(ctx context.Context, m PubSubMessage) error {
 
 	quotes := parseCsv(csvQuotes)
 	log.Println("Number of quotes parsed ", len(quotes))
-
-	writeToDateStore(ctx, quotes)
+	keyBatches, valueBatches := batchQuotes(500, quotes)
+	writeToDateStoreBulk(ctx, keyBatches, valueBatches)
+	//writeToDateStore(ctx, quotes)
 	return nil
 }
 
@@ -68,14 +70,59 @@ func parseCsv(csvQuotes string) map[string]*quote {
 	return quotes
 }
 
-func writeToDateStore(ctx context.Context, quotes map[string]*quote) {
-	for key, quote := range quotes {
-		//fmt.Printf("key[%s] value[%s]\n", k, v)
-		datastoreKey := datastore.NameKey("StockPrices", key, nil)
-		datastoreKey, _ = datastoreClient.Put(ctx, datastoreKey, quote)
-		log.Printf(fmt.Sprintf("Written entry to database %v", datastoreKey))
+func min(a, b int) int {
+	if a <= b {
+		return a
+	}
+	return b
+}
+
+func batchQuotes(limit int, quotes map[string]*quote) ([][]string, [][]*quote) {
+	//fetch all the keys
+	var keyBatches [][]string
+	var valueBatches [][]*quote
+
+	keys := make([]string, 0, len(quotes))
+	values := make([]*quote, 0, len(quotes))
+
+	for k, v := range quotes {
+		keys = append(keys, k)
+		values = append(values, v)
+	}
+
+	for i := 0; i < len(keys); i += limit {
+		keyBatch := keys[i:min(i+limit, len(keys))]
+		valueBatch := values[i:min(i+limit, len(keys))]
+		keyBatches = append(keyBatches, keyBatch)
+		valueBatches = append(valueBatches, valueBatch)
+	}
+	return keyBatches, valueBatches
+}
+
+func writeToDateStoreBulk(ctx context.Context, keyBatches [][]string, valueBatches [][]*quote) {
+	log.Println("Writting batches:", len(keyBatches))
+
+	for i := 0; i < len(keyBatches); i++ {
+		var keys []*datastore.Key
+		for j := 0; j < len(keyBatches[i]); j++ {
+			keys = append(keys, datastore.NameKey(ENTITY_NAME, keyBatches[i][j], nil))
+		}
+
+		if _, err := datastoreClient.PutMulti(ctx, keys, valueBatches[i]); err != nil {
+			log.Fatal(err)
+		}
+		log.Println("Written entry to database :", len(keys))
 	}
 }
+
+// func writeToDateStore(ctx context.Context, quotes map[string]*quote) {
+// 	for key, quote := range quotes {
+// 		//fmt.Printf("key[%s] value[%s]\n", k, v)
+// 		datastoreKey := datastore.NameKey(ENTITY_NAME, key, nil)
+// 		datastoreKey, _ = datastoreClient.Put(ctx, datastoreKey, quote)
+// 		log.Println("Written entry to database :", datastoreKey)
+// 	}
+// }
 
 func parseQuote(quoteLine string) (string, *quote) {
 	defer func() {

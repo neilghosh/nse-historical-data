@@ -1,6 +1,7 @@
 package stockprice
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -46,4 +47,32 @@ func TestParseQuote(t *testing.T) {
 	}
 
 	assert.Equal(t, expectedQuote, actualQuote, "quote does not match")
+}
+
+func TestBatchQuote(t *testing.T) {
+	quotes := make(map[string]*quote)
+
+	for i := 0; i < 10; i++ {
+		quote := &quote{
+			timestamp: time.Now(),
+			symbol:    "SYM" + strconv.Itoa(i),
+			close:     36.05,
+			high:      36.7,
+			low:       35.9,
+			open:      36.5,
+			volume:    28824,
+		}
+		quotes["TEST"+strconv.Itoa(i)] = quote
+	}
+
+	keyBatches, valuevatchs := batchQuotes(3, quotes)
+
+	assert.Equal(t, 4, len(keyBatches), "Number of Batches does not match")
+	assert.Equal(t, 4, len(valuevatchs), "Number of batches does not match")
+
+	assert.Equal(t, 3, len(keyBatches[0]), "Batch Size does not match")
+	assert.Equal(t, 3, len(valuevatchs[0]), "Batch Size does not match")
+
+	assert.Equal(t, 1, len(keyBatches[3]), "Last Batch size does not match")
+	assert.Equal(t, 1, len(valuevatchs[3]), "Last Batch size does not match")
 }
