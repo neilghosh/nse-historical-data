@@ -101,6 +101,7 @@ func batchQuotes(limit int, quotes map[string]*quote) ([][]string, [][]*quote) {
 
 func writeToDateStoreBulk(ctx context.Context, keyBatches [][]string, valueBatches [][]*quote) {
 	log.Println("Writting batches:", len(keyBatches))
+	log.Println("Sample key ", keyBatches[0][0])
 
 	for i := 0; i < len(keyBatches); i++ {
 		var keys []*datastore.Key
