@@ -117,6 +117,6 @@ func TestDatastore(t *testing.T) {
 	quoteKey := datastore.NameKey(ENTITY_NAME, "TEST", nil)
 	dbReadError := datastoreClient.Get(ctx, quoteKey, &actualQuote)
 	_ = dbReadError // Make sure you check err.
-	assert.Equal(t, quote, actualQuote, "Last Batch size does not match")
+	assert.Equal(t, *quote, actualQuote, "Last Batch size does not match")
 
 }
