@@ -1,10 +1,14 @@
 package stockprice
 
 import (
+	"context"
+	"log"
+	"os"
 	"strconv"
 	"testing"
 	"time"
 
+	"cloud.google.com/go/datastore"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,31 +40,31 @@ func TestParseQuote(t *testing.T) {
 
 	assert.Equal(t, "20MICRONS2021-04-16", key, "Key does not match")
 
-	expectedQuote := &quote{
-		timestamp: time.Date(2021, time.Month(4), 16, 0, 0, 0, 0, time.UTC),
-		symbol:    "20MICRONS",
-		close:     36.05,
-		high:      36.7,
-		low:       35.9,
-		open:      36.5,
-		volume:    28824,
+	expectedQuote := &Quote{
+		Timestamp: time.Date(2021, time.Month(4), 16, 0, 0, 0, 0, time.UTC),
+		Symbol:    "20MICRONS",
+		Close:     36.05,
+		High:      36.7,
+		Low:       35.9,
+		Open:      36.5,
+		Volume:    28824,
 	}
 
 	assert.Equal(t, expectedQuote, actualQuote, "quote does not match")
 }
 
 func TestBatchQuote(t *testing.T) {
-	quotes := make(map[string]*quote)
+	quotes := make(map[string]*Quote)
 
 	for i := 0; i < 10; i++ {
-		quote := &quote{
-			timestamp: time.Now(),
-			symbol:    "SYM" + strconv.Itoa(i),
-			close:     36.05,
-			high:      36.7,
-			low:       35.9,
-			open:      36.5,
-			volume:    28824,
+		quote := &Quote{
+			Timestamp: time.Now(),
+			Symbol:    "SYM" + strconv.Itoa(i),
+			Close:     36.05,
+			High:      36.7,
+			Low:       35.9,
+			Open:      36.5,
+			Volume:    28824,
 		}
 		quotes["TEST"+strconv.Itoa(i)] = quote
 	}
@@ -75,4 +79,44 @@ func TestBatchQuote(t *testing.T) {
 
 	assert.Equal(t, 1, len(keyBatches[3]), "Last Batch size does not match")
 	assert.Equal(t, 1, len(valuevatchs[3]), "Last Batch size does not match")
+}
+
+func TestDatastore(t *testing.T) {
+	/**
+		gcloud beta emulators datastore start \
+	  --project unit-testing-project-name \
+	  --consistency=1
+	*/
+	os.Setenv("DATASTORE_EMULATOR_HOST", "localhost:8081")
+
+	var datastoreClient *datastore.Client
+	ctx := context.Background()
+	datastoreClient, err := datastore.NewClient(ctx, "unit-testing-project-name")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var keyBatches [][]string
+	var valueBatches [][]*Quote
+
+	quote := &Quote{
+		Timestamp: time.Now().UTC(),
+		Symbol:    "SYM",
+		Close:     36.05,
+		High:      36.7,
+		Low:       35.9,
+		Open:      36.5,
+		Volume:    28824,
+	}
+	keyBatches = append(keyBatches, []string{"TEST"})
+	valueBatches = append(valueBatches, []*Quote{quote})
+
+	writeToDateStoreBulk(ctx, datastoreClient, keyBatches, valueBatches)
+
+	var actualQuote Quote
+	quoteKey := datastore.NameKey(ENTITY_NAME, "TEST", nil)
+	dbReadError := datastoreClient.Get(ctx, quoteKey, &actualQuote)
+	_ = dbReadError // Make sure you check err.
+	assert.Equal(t, quote, actualQuote, "Last Batch size does not match")
+
 }

@@ -20,14 +20,14 @@ type PubSubMessage struct {
 	Data []byte `json:"data"`
 }
 
-type quote struct {
-	timestamp time.Time
-	symbol    string
-	close     float32
-	high      float32
-	low       float32
-	open      float32
-	volume    uint32
+type Quote struct {
+	Timestamp time.Time `json:"timestamp"`
+	Symbol    string    `json:"symbol"`
+	Close     float32   `json:"close"`
+	High      float32   `json:"high"`
+	Low       float32   `json:"low"`
+	Open      float32   `json:"open"`
+	Volume    int       `json:"volume"`
 }
 
 // HelloPubSub consumes a Pub/Sub message.
@@ -47,13 +47,13 @@ func HelloPubSub(ctx context.Context, m PubSubMessage) error {
 	quotes := parseCsv(csvQuotes)
 	log.Println("Number of quotes parsed ", len(quotes))
 	keyBatches, valueBatches := batchQuotes(500, quotes)
-	writeToDateStoreBulk(ctx, keyBatches, valueBatches)
+	writeToDateStoreBulk(ctx, datastoreClient, keyBatches, valueBatches)
 	//writeToDateStore(ctx, quotes)
 	return nil
 }
 
-func parseCsv(csvQuotes string) map[string]*quote {
-	quotes := make(map[string]*quote)
+func parseCsv(csvQuotes string) map[string]*Quote {
+	quotes := make(map[string]*Quote)
 	quoteLines := strings.Split(csvQuotes, "\n")
 	log.Println("Number of lines parsed ", len(quoteLines))
 	log.Println("Sample line ", quoteLines[1])
@@ -77,13 +77,13 @@ func min(a, b int) int {
 	return b
 }
 
-func batchQuotes(limit int, quotes map[string]*quote) ([][]string, [][]*quote) {
+func batchQuotes(limit int, quotes map[string]*Quote) ([][]string, [][]*Quote) {
 	//fetch all the keys
 	var keyBatches [][]string
-	var valueBatches [][]*quote
+	var valueBatches [][]*Quote
 
 	keys := make([]string, 0, len(quotes))
-	values := make([]*quote, 0, len(quotes))
+	values := make([]*Quote, 0, len(quotes))
 
 	for k, v := range quotes {
 		keys = append(keys, k)
@@ -99,7 +99,7 @@ func batchQuotes(limit int, quotes map[string]*quote) ([][]string, [][]*quote) {
 	return keyBatches, valueBatches
 }
 
-func writeToDateStoreBulk(ctx context.Context, keyBatches [][]string, valueBatches [][]*quote) {
+func writeToDateStoreBulk(ctx context.Context, datastoreClient *datastore.Client, keyBatches [][]string, valueBatches [][]*Quote) {
 	log.Println("Writting batches:", len(keyBatches))
 	log.Println("Sample key ", keyBatches[0][0], valueBatches[0][0])
 
@@ -125,7 +125,7 @@ func writeToDateStoreBulk(ctx context.Context, keyBatches [][]string, valueBatch
 // 	}
 // }
 
-func parseQuote(quoteLine string) (string, *quote) {
+func parseQuote(quoteLine string) (string, *Quote) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println("panic occurred while parsing:", len(quoteLine), quoteLine, err)
@@ -144,14 +144,14 @@ func parseQuote(quoteLine string) (string, *quote) {
 	timestamp, t := parseTimestamp(quoteValue[10])
 	key := symbol + timestamp
 
-	quote := &quote{
-		timestamp: t,
-		symbol:    symbol,
-		close:     float32(close),
-		high:      float32(high),
-		low:       float32(low),
-		open:      float32(open),
-		volume:    uint32(volume),
+	quote := &Quote{
+		Timestamp: t,
+		Symbol:    symbol,
+		Close:     float32(close),
+		High:      float32(high),
+		Low:       float32(low),
+		Open:      float32(open),
+		Volume:    int(volume),
 	}
 
 	return key, quote
