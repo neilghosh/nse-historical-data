@@ -11,6 +11,7 @@ const storage = new Storage();
 const bucketName = 'nse-historical-prices';
 var gcsBucket = storage.bucket(bucketName);
 const axios = require('axios');
+const AxiosLogger = require('axios-logger');
 
 const { PubSub } = require('@google-cloud/pubsub');
 const pubSubClient = new PubSub();
@@ -130,13 +131,23 @@ function getData(file_url) {
 function getCsvData(file_url) {
   console.log("Downloading from - axios " + file_url);
 
+  axios.interceptors.request.use( AxiosLogger.requestLogger);
+  AxiosLogger.setGlobalConfig({
+    prefixText: 'NASE',
+    dateFormat: 'HH:MM:ss',
+    status: true,
+    headers: true,
+    data : false,
+});
+  axios.interceptors.response.use(AxiosLogger.responseLogger, AxiosLogger.errorLogger);
+
   return new Promise(function (resolve, reject) {
 
     axios.get(file_url, {
       timeout: 1000 * 5
       , headers: {
-        'Referer': 'https://www.nseindia.com/all-reports'
-        , 'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36'
+        'Referer': 'https://www.nseindia.com/all-reports',
+        'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36'
       }
     })
       .then(function (response) {
@@ -144,7 +155,7 @@ function getCsvData(file_url) {
           err = "Did not find any price for " + file_url + response;
           reject(err);
         } else {
-          console.log("Found prices size " + response.data);
+          console.log("Found prices size " + response.data.length);
           resolve(response.data);
         }
       })
@@ -153,8 +164,7 @@ function getCsvData(file_url) {
         reject(err);
       })
       .finally(function () {
-        console.log("Download operation completed OK/Error" + response.data);
-
+        console.log("Download operation completed OK/Error");
       });
   })
 }
