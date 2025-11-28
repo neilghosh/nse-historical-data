@@ -131,14 +131,14 @@ function getData(file_url) {
 function getCsvData(file_url) {
   console.log("Downloading from - axios " + file_url);
 
-  axios.interceptors.request.use( AxiosLogger.requestLogger);
+  axios.interceptors.request.use(AxiosLogger.requestLogger);
   AxiosLogger.setGlobalConfig({
     prefixText: 'NASE',
     dateFormat: 'HH:MM:ss',
     status: true,
     headers: true,
-    data : false,
-});
+    data: false,
+  });
   axios.interceptors.response.use(AxiosLogger.responseLogger, AxiosLogger.errorLogger);
 
   return new Promise(function (resolve, reject) {
@@ -173,7 +173,94 @@ function getDate(date) {
   return ("0" + date.getDate()).slice(-2) + months[date.getMonth()] + date.getFullYear();
 }
 
+function transformCSVForBigQuery(csvData, date) {
+  console.log("Transforming CSV data for BigQuery compatibility...");
+
+  const lines = csvData.split('\n');
+  if (lines.length === 0) {
+    return csvData;
+  }
+
+  // Parse header - trim spaces from column names
+  const originalHeader = lines[0].split(',').map(col => col.trim());
+
+  // Define BigQuery column order
+  const bqColumns = [
+    'SYMBOL', 'SERIES', 'OPEN', 'HIGH', 'LOW', 'CLOSE', 'LAST',
+    'PREVCLOSE', 'TOTTRDQTY', 'TOTTRDVAL', 'TIMESTAMP', 'TOTALTRADES',
+    'ISIN', 'string_field_13'
+  ];
+
+  // Create mapping from NSE columns to BigQuery columns
+  const columnMapping = {
+    'SYMBOL': 'SYMBOL',
+    'SERIES': 'SERIES',
+    'OPEN_PRICE': 'OPEN',
+    'HIGH_PRICE': 'HIGH',
+    'LOW_PRICE': 'LOW',
+    'CLOSE_PRICE': 'CLOSE',
+    'LAST_PRICE': 'LAST',
+    'PREV_CLOSE': 'PREVCLOSE',
+    'TTL_TRD_QNTY': 'TOTTRDQTY',
+    'TURNOVER_LACS': 'TOTTRDVAL',
+    'DATE1': 'TIMESTAMP',
+    'NO_OF_TRADES': 'TOTALTRADES'
+  };
+
+  // Build index map for quick lookup
+  const headerIndex = {};
+  originalHeader.forEach((col, idx) => {
+    headerIndex[col] = idx;
+  });
+
+  // Format date as YYYY-MM-DD
+  const formattedDate = date.toISOString().split('T')[0];
+
+  // Transform data rows
+  const transformedRows = [bqColumns.join(',')]; // New header
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const values = line.split(',').map(v => v.trim());
+    const newRow = [];
+
+    for (const bqCol of bqColumns) {
+      // Find the corresponding NSE column
+      const nseCol = Object.keys(columnMapping).find(key => columnMapping[key] === bqCol);
+
+      if (nseCol && headerIndex[nseCol] !== undefined) {
+        let value = values[headerIndex[nseCol]];
+
+        // Special transformations
+        if (bqCol === 'TIMESTAMP') {
+          // Use the date parameter instead of parsing from CSV
+          value = formattedDate;
+        } else if (bqCol === 'TOTTRDVAL') {
+          // Convert lacs to actual value (1 lac = 100,000)
+          const lacs = parseFloat(value) || 0;
+          value = (lacs * 100000).toString();
+        }
+
+        newRow.push(value);
+      } else {
+        // Missing columns - add empty value
+        newRow.push('');
+      }
+    }
+
+    transformedRows.push(newRow.join(','));
+  }
+
+  console.log(`Transformed ${transformedRows.length - 1} rows`);
+  return transformedRows.join('\n');
+}
+
 async function writeToBucket(date, data) {
+  // Transform data to BigQuery-compatible format
+  const transformedData = transformCSVForBigQuery(data, date);
+
   var fileName = date.toISOString().split('T')[0] + '.csv';
   console.log("Saving in GCS as " + fileName);
   var file = gcsBucket.file(fileName);
@@ -188,8 +275,9 @@ async function writeToBucket(date, data) {
   })
     .on('error', function (err) { })
     .on('finish', function () { console.log("Uploaded"); })
-    .end(data);
+    .end(transformedData);
 }
+
 
 function getDataInRange(startDate, endDate) {
   var start = new Date(startDate);

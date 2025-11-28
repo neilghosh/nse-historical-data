@@ -1,28 +1,62 @@
-name: Deploy GCF
+name: Deploy Cloud Functions
 
 on: 
   push:
     branches:
       - master
     paths:
-      - 'functions/getQuotesByDate/*'
+      - 'functions/**'
+      - '.github/workflows/deploy-function.yml'
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - name: Install gcloud SDK
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCLOUD_AUTH }}
+        
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      
+    - name: Deploy getQuotesByDate (Node.js)
       run: |
-        sudo apt-get update && sudo apt-get install google-cloud-sdk
-    - name: Activate Service Account 
-      env: 
-        GCLOUD_AUTH: ${{ secrets.GCLOUD_AUTH }}
+        gcloud functions deploy getQuotesByDate \
+          --gen2 \
+          --runtime=nodejs20 \
+          --region=us-central1 \
+          --source=functions/getQuotesByDate \
+          --entry-point=fetchTickers \
+          --trigger-http \
+          --allow-unauthenticated \
+          --service-account=github-actions@demoneil.iam.gserviceaccount.com \
+          --project=demoneil
+          
+    - name: Deploy loadQuotesToBQ (Node.js)
       run: |
-        echo "$GCLOUD_AUTH" | base64 --decode > "$HOME"/gcloud.json
-        sh -c "gcloud auth activate-service-account --key-file=$HOME/gcloud.json $*"
-    - name: deploy function 
+        gcloud functions deploy loadQuotesToBQ \
+          --gen2 \
+          --runtime=nodejs20 \
+          --region=us-central1 \
+          --source=functions/loadQuotesToBQ \
+          --entry-point=loadToBQ \
+          --trigger-event-filters="type=google.cloud.storage.object.v1.finalized" \
+          --trigger-event-filters="bucket=nse-historical-prices" \
+          --service-account=github-actions@demoneil.iam.gserviceaccount.com \
+          --project=demoneil
+          
+    - name: Deploy saveQuoteToDatastore (Go)
       run: |
-        gcloud functions deploy getQuotesByDate --runtime nodejs8 --project demoneil --service-account github-actions@demoneil.iam.gserviceaccount.com --source functions/getQuotesByDate
-
-
+        gcloud functions deploy saveQuoteToDatastore \
+          --gen2 \
+          --runtime=go121 \
+          --region=us-central1 \
+          --source=functions/saveQuoteToDatastore \
+          --entry-point=SaveQuoteToDatastore \
+          --trigger-topic=quote-data \
+          --service-account=github-actions@demoneil.iam.gserviceaccount.com \
+          --project=demoneil
