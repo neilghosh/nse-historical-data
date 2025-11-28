@@ -23,9 +23,9 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
       
-    - name: Deploy getQuotesByDate (Node.js)
+    - name: Deploy getQuotesByDate-v2 (Node.js Gen2)
       run: |
-        gcloud functions deploy getQuotesByDate \
+        gcloud functions deploy getQuotesByDate-v2 \
           --gen2 \
           --runtime=nodejs20 \
           --region=us-central1 \
@@ -36,9 +36,9 @@ jobs:
           --service-account=github-actions@demoneil.iam.gserviceaccount.com \
           --project=demoneil
           
-    - name: Deploy loadQuotesToBQ (Node.js)
+    - name: Deploy loadQuotesToBQ-v2 (Node.js Gen2)
       run: |
-        gcloud functions deploy loadQuotesToBQ \
+        gcloud functions deploy loadQuotesToBQ-v2 \
           --gen2 \
           --runtime=nodejs20 \
           --region=us-central1 \
@@ -49,9 +49,9 @@ jobs:
           --service-account=github-actions@demoneil.iam.gserviceaccount.com \
           --project=demoneil
           
-    - name: Deploy saveQuoteToDatastore (Go)
+    - name: Deploy saveQuoteToDatastore-v2 (Go Gen2)
       run: |
-        gcloud functions deploy saveQuoteToDatastore \
+        gcloud functions deploy saveQuoteToDatastore-v2 \
           --gen2 \
           --runtime=go121 \
           --region=us-central1 \
